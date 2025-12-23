@@ -1,0 +1,8 @@
+# Icon Placeholder
+# For a real deployment, create proper PNG icons at these sizes:
+# - icon16.png (16x16)
+# - icon48.png (48x48)
+# - icon128.png (128x128)
+#
+# Use a shield emoji or similar icon representing protection/defense
+# Recommended colors: Blue/purple gradient (#667eea to #764ba2)

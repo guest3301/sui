@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DoomScroll Defender - Settings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f7fafc;
+      color: #1a202c;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #718096;
+      font-size: 16px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #2d3748;
+    }
+
+    .form-description {
+      display: block;
+      font-size: 14px;
+      color: #718096;
+      margin-bottom: 12px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .checkbox-input {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .category-card {
+      background: #f7fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .category-name {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #2d3748;
+    }
+
+    .category-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f7fafc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .list-item-text {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .btn-remove {
+      background: #f56565;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .btn-remove:hover {
+      background: #e53e3e;
+    }
+
+    .btn-add {
+      background: #48bb78;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-add:hover {
+      background: #38a169;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    .save-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #48bb78;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .onboarding {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .onboarding h2 {
+      font-size: 28px;
+      margin-bottom: 15px;
+    }
+
+    .onboarding p {
+      font-size: 16px;
+      opacity: 0.95;
+      margin-bottom: 10px;
+    }
+
+    .site-classifier {
+      margin-top: 20px;
+    }
+
+    .site-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .site-input-group input {
+      flex: 2;
+    }
+
+    .site-input-group select {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Onboarding (shown only on first install) -->
+    <div class="onboarding" id="onboarding" style="display: none;">
+      <h2>🛡️ Welcome to DoomScroll Defender!</h2>
+      <p>Your privacy-focused tool for healthier browsing habits.</p>
+      <p>Interventions are active immediately to help you build better habits.</p>
+      <p>All data stays on your device. No external tracking.</p>
+    </div>
+
+    <div class="header">
+      <h1>⚙️ Settings</h1>
+      <p>Customize your doomscroll defense system</p>
+    </div>
+
+    <!-- Category Settings -->
+    <div class="section">
+      <div class="section-title">📊 Category Time Limits</div>
+      <div class="form-description">Set daily time limits for different content categories (in minutes, 0 = no limit)</div>
+      
+      <div class="category-grid">
+        <div class="category-card">
+          <div class="category-name">📰 News</div>
+          <input type="number" id="news-limit" class="category-input" min="0" placeholder="30">
+          <select id="news-sensitivity" class="form-select">
+            <option value="low">Low Sensitivity</option>
+            <option value="medium" selected>Medium Sensitivity</option>
+            <option value="high">High Sensitivity</option>
+          </select>
+        </div>
+
+        <div class="category-card">
+          <div class="category-name">👥 Social Media</div>
+          <input type="number" id="social-limit" class="category-input" min="0" placeholder="60">
+          <select id="social-sensitivity" class="form-select">
+            <option value="low">Low Sensitivity</option>
+            <option value="medium" selected>Medium Sensitivity</option>
+            <option value="high">High Sensitivity</option>
+          </select>
+        </div>
+
+        <div class="category-card">
+          <div class="category-name">🌐 Neutral</div>
+          <input type="number" id="neutral-limit" class="category-input" min="0" placeholder="0">
+          <select id="neutral-sensitivity" class="form-select">
+            <option value="low" selected>Low Sensitivity</option>
+            <option value="medium">Medium Sensitivity</option>
+            <option value="high">High Sensitivity</option>
+          </select>
+        </div>
+
+        <div class="category-card">
+          <div class="category-name">✅ Productive</div>
+          <input type="number" id="productive-limit" class="category-input" min="0" placeholder="0">
+          <select id="productive-sensitivity" class="form-select">
+            <option value="low" selected>Low Sensitivity</option>
+            <option value="medium">Medium Sensitivity</option>
+            <option value="high">High Sensitivity</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Site Classifier -->
+    <div class="section">
+      <div class="section-title">🏷️ Site Classification</div>
+      <div class="form-description">Manually categorize websites to improve tracking accuracy</div>
+      
+      <div class="site-classifier">
+        <div class="site-input-group">
+          <input type="text" id="site-domain" class="form-input" placeholder="example.com">
+          <select id="site-category" class="form-select">
+            <option value="news">News</option>
+            <option value="social">Social Media</option>
+            <option value="neutral">Neutral</option>
+            <option value="productive">Productive</option>
+          </select>
+          <button class="btn-add" id="add-site-btn">+ Add</button>
+        </div>
+        <div id="classified-sites"></div>
+      </div>
+    </div>
+
+    <!-- Calm Sites -->
+    <div class="section">
+      <div class="section-title">🧘 Calm Sites</div>
+      <div class="form-description">Sites to redirect to when you need a break</div>
+      
+      <div class="form-group">
+        <div style="display: flex; gap: 10px;">
+          <input type="url" id="calm-site-input" class="form-input" placeholder="https://www.calm.com">
+          <button class="btn-add" id="add-calm-site-btn">+ Add</button>
+        </div>
+      </div>
+      <div id="calm-sites-list"></div>
+    </div>
+
+    <!-- Intervention Settings -->
+    <div class="section">
+      <div class="section-title">⚠️ Intervention Settings</div>
+      
+      <div class="form-group">
+        <label class="form-label">Overall Sensitivity</label>
+        <span class="form-description">How aggressively should we intervene?</span>
+        <select id="intervention-sensitivity" class="form-select">
+          <option value="low">Low - Intervene only at very high scores</option>
+          <option value="medium" selected>Medium - Balanced approach</option>
+          <option value="high">High - Intervene early and often</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="enable-notifications" class="checkbox-input" checked>
+          <label for="enable-notifications" class="form-label">Enable notifications</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dark Pattern Detection Settings -->
+    <div class="section">
+      <div class="section-title">🛡️ Dark Pattern Detection</div>
+      
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="enable-dark-pattern-detection" class="checkbox-input" checked>
+          <label for="enable-dark-pattern-detection" class="form-label">Enable dark pattern detection</label>
+        </div>
+        <span class="form-description">Automatically detect deceptive UI patterns on websites</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Gemini API Key (Optional)</label>
+        <span class="form-description">For advanced AI-powered detection. Leave empty to use local detection only.</span>
+        <input type="password" id="gemini-api-key" class="form-input" placeholder="Enter your Gemini API key">
+        <div style="margin-top: 8px;">
+          <a href="https://makersuite.google.com/app/apikey" target="_blank" style="font-size: 12px; color: #667eea;">Get API Key →</a>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Detection Sensitivity</label>
+        <select id="dark-pattern-sensitivity" class="form-select">
+          <option value="low">Low - Only obvious patterns</option>
+          <option value="medium" selected>Medium - Balanced detection</option>
+          <option value="high">High - Detect subtle patterns</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="show-dark-pattern-warnings" class="checkbox-input" checked>
+          <label for="show-dark-pattern-warnings" class="form-label">Show on-page warnings</label>
+        </div>
+        <span class="form-description">Display warnings when dark patterns are detected</span>
+      </div>
+    </div>
+
+    <!-- Scheduled Blocking -->
+    <div class="section">
+      <div class="section-title">🕐 Scheduled Blocking</div>
+      <div class="form-description">Block distracting sites during specific hours</div>
+      
+      <div class="form-group">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+          <div>
+            <label class="form-label">Start Time</label>
+            <input type="time" id="block-start" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">End Time</label>
+            <input type="time" id="block-end" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Categories</label>
+            <select id="block-categories" class="form-select" multiple>
+              <option value="news">News</option>
+              <option value="social">Social Media</option>
+            </select>
+          </div>
+          <button class="btn-add" id="add-block-schedule-btn">+ Add</button>
+        </div>
+      </div>
+      <div id="block-schedules-list"></div>
+    </div>
+
+    <!-- Data Management -->
+    <div class="section">
+      <div class="section-title">💾 Data Management</div>
+      
+      <div class="form-group">
+        <label class="form-label">Reset All Data</label>
+        <span class="form-description">This will delete all tracked sessions, interventions, and mood data. Settings will be preserved.</span>
+        <button class="btn-danger" id="reset-data-btn">Reset Data</button>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="section">
+      <button class="btn-primary" id="save-btn">💾 Save Settings</button>
+    </div>
+  </div>
+
+  <!-- Save Notification -->
+  <div class="save-notification" id="save-notification">
+    ✅ Settings saved successfully!
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

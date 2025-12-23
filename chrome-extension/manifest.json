@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "ShieldUI - Dark Pattern & Doomscroll Prevention",
+  "version": "2.0.0",
+  "description": "Detect dark patterns and prevent doomscrolling with AI-powered protection and secure cloud sync",
+  "permissions": [
+    "tabs",
+    "webNavigation",
+    "storage",
+    "activeTab",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:5000/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["api-client.js", "content.js", "dark-pattern-detector.js"],
+      "css": ["content-styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.svg",
+      "48": "icons/icon48.svg",
+      "128": "icons/icon128.svg"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.svg",
+    "48": "icons/icon48.svg",
+    "128": "icons/icon128.svg"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["intervention.html", "styles.css", "api-client.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <div style="margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: 600; color: #f7fafc; margin-bottom: 4px;">{{ user.username }}</h1>
+        <p style="color: #a0aec0; font-size: 14px;">Dashboard</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px;">
+        <div style="background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+            <div style="font-size: 28px; font-weight: 600; color: #f7fafc;" id="detection-count">--</div>
+            <div style="color: #a0aec0; font-size: 13px; margin-top: 4px;">Patterns Detected</div>
+        </div>
+        
+        <div style="background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+            <div style="font-size: 28px; font-weight: 600; color: #f7fafc;" id="doomscroll-count">--</div>
+            <div style="color: #a0aec0; font-size: 13px; margin-top: 4px;">Scroll Sessions</div>
+        </div>
+        
+        <div style="background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+            <div style="font-size: 28px; font-weight: 600; color: #f7fafc;" id="intervention-count">--</div>
+            <div style="color: #a0aec0; font-size: 13px; margin-top: 4px;">Interventions</div>
+        </div>
+        
+        <div style="background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+            <div style="font-size: 28px; font-weight: 600; color: #f7fafc;" id="time-saved">--</div>
+            <div style="color: #a0aec0; font-size: 13px; margin-top: 4px;">Minutes Tracked</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #f7fafc; margin-bottom: 16px;">Recent Patterns</h2>
+            <div id="recent-detections">
+                <div style="text-align: center; padding: 20px; color: #718096; font-size: 14px;">
+                    Loading...
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 20px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #f7fafc; margin-bottom: 16px;">Recent Activity</h2>
+            <div id="recent-doomscrolls">
+                <div style="text-align: center; padding: 20px; color: #718096; font-size: 14px;">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+   
+    const AUTH_TOKEN = "{{ token }}";
+    
+    async function loadDashboardData() {
+        try {
+            if (!AUTH_TOKEN) {
+                console.error('No auth token available');
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Load summary statistics
+            const summaryResponse = await fetch('/api/analytics/summary?days=30', {
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            });
+            
+            if (summaryResponse.ok) {
+                const summary = await summaryResponse.json();
+                
+                document.getElementById('detection-count').textContent = summary.detections.total;
+                document.getElementById('doomscroll-count').textContent = summary.doomscrolls.total;
+                document.getElementById('intervention-count').textContent = summary.doomscrolls.interventions_triggered;
+                document.getElementById('time-saved').textContent = Math.round(summary.doomscrolls.total_time_seconds / 60);
+            }
+            
+            // Load recent detections
+            const detectionsResponse = await fetch('/api/detection/recent?limit=5', {
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            });
+            
+            if (detectionsResponse.ok) {
+                const { detections } = await detectionsResponse.json();
+                displayDetections(detections);
+            }
+            
+            // Load recent doomscrolls
+            const doomscrollsResponse = await fetch('/api/detection/doomscroll/recent?limit=5', {
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            });
+            
+            if (doomscrollsResponse.ok) {
+                const { doomscrolls } = await doomscrollsResponse.json();
+                displayDoomscrolls(doomscrolls);
+            }
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+    
+    function displayDetections(detections) {
+        const container = document.getElementById('recent-detections');
+        
+        if (detections.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096; font-size: 14px;">No patterns detected</div>';
+            return;
+        }
+        
+        container.innerHTML = detections.map(d => {
+            const date = new Date(d.detected_at).toLocaleDateString();
+            const url = new URL(d.url);
+            const domain = url.hostname;
+            
+            return `
+                <div style="border-bottom: 1px solid #2d3748; padding: 12px 0; font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="color: #f7fafc; margin-bottom: 2px;">${d.pattern_type.replace(/_/g, ' ')}</div>
+                            <div style="font-size: 12px; color: #718096;">${domain}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: #718096;">${date}</div>
+                            <div style="font-size: 11px; color: #a0aec0; margin-top: 2px;">
+                                ${Math.round(d.confidence_score * 100)}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    function displayDoomscrolls(doomscrolls) {
+        const container = document.getElementById('recent-doomscrolls');
+        
+        if (doomscrolls.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096; font-size: 14px;">No activity yet</div>';
+            return;
+        }
+        
+        container.innerHTML = doomscrolls.map(d => {
+            const date = new Date(d.logged_at).toLocaleDateString();
+            const url = new URL(d.url);
+            const domain = url.hostname;
+            const minutes = Math.round(d.scroll_duration / 60);
+            
+            return `
+                <div style="border-bottom: 1px solid #2d3748; padding: 12px 0; font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="color: #f7fafc; margin-bottom: 2px;">${domain}</div>
+                            <div style="font-size: 12px; color: #718096;">${minutes}m${d.intervention_triggered ? ' • blocked' : ''}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: #718096;">${date}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Load data on page load
+    loadDashboardData();
+</script>
+{% endblock %}

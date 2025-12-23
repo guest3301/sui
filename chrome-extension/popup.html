@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DoomScroll Defender</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🛡️ DoomScroll Defender</h1>
+      <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+    </div>
+
+    <!-- Doomscore Display -->
+    <div class="doomscore-section">
+      <div class="doomscore-circle" id="doomscore-circle">
+        <svg width="200" height="200" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="90" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+          <circle id="doomscore-progress" cx="100" cy="100" r="90" fill="none" 
+                  stroke="#667eea" stroke-width="12" 
+                  stroke-dasharray="565.48" stroke-dashoffset="565.48"
+                  transform="rotate(-90 100 100)"
+                  style="transition: stroke-dashoffset 0.5s ease, stroke 0.5s ease"/>
+          <text x="100" y="95" text-anchor="middle" font-size="48" font-weight="bold" fill="#1a202c" id="doomscore-value">0</text>
+          <text x="100" y="120" text-anchor="middle" font-size="14" fill="#718096">Doomscore</text>
+        </svg>
+      </div>
+      <div class="doomscore-status" id="doomscore-status">
+        <span class="status-icon">✅</span>
+        <span class="status-text">Healthy browsing</span>
+      </div>
+    </div>
+
+    <!-- Time Tracking -->
+    <div class="section">
+      <h2>⏱️ Time Tracking</h2>
+      <div class="time-stats">
+        <div class="stat-card">
+          <div class="stat-value" id="today-time">0min</div>
+          <div class="stat-label">Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="week-time">0min</div>
+          <div class="stat-label">This Week</div>
+        </div>
+      </div>
+      
+      <div class="time-chart">
+        <canvas id="timeChart" width="300" height="150"></canvas>
+      </div>
+    </div>
+
+    <!-- Dark Pattern Detection -->
+    <div class="section">
+      <h2>🛡️ Dark Pattern Detection</h2>
+      <div class="dark-pattern-stats">
+        <div class="stat-card">
+          <div class="stat-value" id="dark-patterns-today">0</div>
+          <div class="stat-label">Detected Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="dark-patterns-week">0</div>
+          <div class="stat-label">This Week</div>
+        </div>
+      </div>
+      <div class="dark-pattern-list" id="dark-pattern-list">
+        <div class="loading">No dark patterns detected yet</div>
+      </div>
+    </div>
+
+    <!-- Top Doom Sources -->
+    <div class="section">
+      <h2>🎯 Top Doom Sources</h2>
+      <div class="doom-sources" id="doom-sources">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Mood Tracker -->
+    <div class="section">
+      <h2>😊 How are you feeling?</h2>
+      <div class="mood-tracker">
+        <button class="mood-btn" data-mood="1" title="Very bad">😞</button>
+        <button class="mood-btn" data-mood="2" title="Bad">😕</button>
+        <button class="mood-btn" data-mood="3" title="Neutral">😐</button>
+        <button class="mood-btn" data-mood="4" title="Good">🙂</button>
+        <button class="mood-btn" data-mood="5" title="Great">😄</button>
+      </div>
+      <div class="mood-history" id="mood-history">
+        <!-- Mood history will be populated here -->
+      </div>
+    </div>
+
+    <!-- Quick Controls -->
+    <div class="section">
+      <h2>🎮 Quick Controls</h2>
+      <div class="quick-controls">
+        <button id="pause-timer-btn" class="control-btn">
+          <span class="btn-icon">⏸️</span>
+          <span class="btn-text">Pause Timer</span>
+        </button>
+        <button id="block-site-btn" class="control-btn">
+          <span class="btn-icon">🚫</span>
+          <span class="btn-text">Block Site (1h)</span>
+        </button>
+        <button id="calm-redirect-btn" class="control-btn">
+          <span class="btn-icon">🧘</span>
+          <span class="btn-text">Go to Calm Site</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Learning Phase Banner -->
+    <div class="learning-banner" id="learning-banner" style="display: none;">
+      <span class="banner-icon">📚</span>
+      <div class="banner-content">
+        <strong>Learning Phase</strong>
+        <p>We're learning your patterns. Interventions start after 7 days.</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-stats">
+        <span id="interventions-count">0 interventions today</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
