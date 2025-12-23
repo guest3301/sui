@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - ShieldUI{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 32px; margin-bottom: 30px;">Analytics & Insights</h1>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 class="card-title" style="margin: 0;">Overview</h2>
+        <select id="time-range" style="padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 6px;">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+        </select>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 8px;">
+            <div style="font-size: 32px; font-weight: bold; color: #667eea;" id="total-detections">--</div>
+            <div style="color: #718096; margin-top: 5px; font-size: 14px;">Dark Patterns</div>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 8px;">
+            <div style="font-size: 32px; font-weight: bold; color: #f6ad55;" id="total-doomscrolls">--</div>
+            <div style="color: #718096; margin-top: 5px; font-size: 14px;">Doomscroll Events</div>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 8px;">
+            <div style="font-size: 32px; font-weight: bold; color: #48bb78;" id="total-interventions">--</div>
+            <div style="color: #718096; margin-top: 5px; font-size: 14px;">Interventions</div>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 8px;">
+            <div style="font-size: 32px; font-weight: bold; color: #9f7aea;" id="avg-confidence">--</div>
+            <div style="color: #718096; margin-top: 5px; font-size: 14px;">Avg Confidence</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <h2 class="card-title">Pattern Types</h2>
+        <canvas id="patterns-chart" width="400" height="300"></canvas>
+        <div id="patterns-legend" style="margin-top: 15px;"></div>
+    </div>
+    
+    <div class="card">
+        <h2 class="card-title">Top Problematic Websites</h2>
+        <div id="websites-list">
+            <div style="text-align: center; padding: 20px; color: #a0aec0;">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Timeline</h2>
+    <canvas id="timeline-chart" width="1100" height="300"></canvas>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const AUTH_TOKEN = "{{ token }}";
+    let currentRange = 30;
+    
+    async function loadAnalytics() {
+        try {
+            if (!AUTH_TOKEN) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            await Promise.all([
+                loadSummary(),
+                loadPatterns(),
+                loadWebsites(),
+                loadTimeline()
+            ]);
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+        }
+    }
+    
+    async function loadSummary() {
+        const response = await fetch(`/api/analytics/summary?days=${currentRange}`, {
+            headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            document.getElementById('total-detections').textContent = data.detections.total;
+            document.getElementById('total-doomscrolls').textContent = data.doomscrolls.total;
+            document.getElementById('total-interventions').textContent = data.doomscrolls.interventions_triggered;
+            document.getElementById('avg-confidence').textContent = (data.detections.avg_confidence * 100).toFixed(0) + '%';
+        }
+    }
+    
+    async function loadPatterns() {
+        const response = await fetch(`/api/analytics/patterns?days=${currentRange}`, {
+            headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+        });
+        
+        if (response.ok) {
+            const { patterns } = await response.json();
+            drawPatternsChart(patterns);
+        }
+    }
+    
+    async function loadWebsites() {
+        const response = await fetch(`/api/analytics/websites?days=${currentRange}&limit=10`, {
+            headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+        });
+        
+        if (response.ok) {
+            const { websites } = await response.json();
+            displayWebsites(websites);
+        }
+    }
+    
+    async function loadTimeline() {
+        const response = await fetch(`/api/analytics/timeline?days=${currentRange}`, {
+            headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+        });
+        
+        if (response.ok) {
+            const { timeline } = await response.json();
+            drawTimelineChart(timeline);
+        }
+    }
+    
+    function drawPatternsChart(patterns) {
+        const canvas = document.getElementById('patterns-chart');
+        const ctx = canvas.getContext('2d');
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (patterns.length === 0) {
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('No data available', canvas.width / 2, canvas.height / 2);
+            return;
+        }
+        
+        const colors = ['#667eea', '#f6ad55', '#48bb78', '#f56565', '#9f7aea', '#4299e1'];
+        const total = patterns.reduce((sum, p) => sum + p.count, 0);
+        
+        let currentAngle = -Math.PI / 2;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = Math.min(centerX, centerY) - 20;
+        
+        patterns.forEach((pattern, i) => {
+            const sliceAngle = (pattern.count / total) * 2 * Math.PI;
+            
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+            ctx.closePath();
+            ctx.fill();
+            
+            currentAngle += sliceAngle;
+        });
+        
+        // Legend
+        const legend = document.getElementById('patterns-legend');
+        legend.innerHTML = patterns.map((p, i) => `
+            <div style="display: flex; align-items: center; margin: 5px 0;">
+                <div style="width: 16px; height: 16px; background: ${colors[i % colors.length]}; border-radius: 3px; margin-right: 8px;"></div>
+                <div style="flex: 1; font-size: 13px; color: #4a5568;">${p.type}</div>
+                <div style="font-weight: 600; font-size: 13px; color: #2d3748;">${p.count}</div>
+            </div>
+        `).join('');
+    }
+    
+    function displayWebsites(websites) {
+        const container = document.getElementById('websites-list');
+        
+        if (websites.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #a0aec0;">No data available</div>';
+            return;
+        }
+        
+        container.innerHTML = websites.map(site => `
+            <div style="border-bottom: 1px solid #e2e8f0; padding: 12px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 4px;">${site.domain}</div>
+                        <div style="font-size: 12px; color: #718096;">
+                            ${site.detections} patterns • ${site.doomscrolls} doomscrolls • ${Math.round(site.total_time_seconds / 60)}min
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: bold; color: #f56565;">
+                            ${site.detections + site.doomscrolls}
+                        </div>
+                        <div style="font-size: 11px; color: #a0aec0;">issues</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function drawTimelineChart(timeline) {
+        const canvas = document.getElementById('timeline-chart');
+        const ctx = canvas.getContext('2d');
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (timeline.length === 0) {
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('No data available', canvas.width / 2, canvas.height / 2);
+            return;
+        }
+        
+        const maxDetections = Math.max(...timeline.map(t => t.detections), 1);
+        const maxDoomscrolls = Math.max(...timeline.map(t => t.doomscrolls), 1);
+        const maxValue = Math.max(maxDetections, maxDoomscrolls);
+        
+        const barWidth = Math.max(15, (canvas.width - 100) / timeline.length / 2 - 2);
+        const chartHeight = canvas.height - 60;
+        const scale = chartHeight / maxValue;
+        
+        timeline.forEach((day, i) => {
+            const x = 50 + (i * (barWidth * 2 + 10));
+            
+            // Detections bar
+            const detectionsHeight = day.detections * scale;
+            ctx.fillStyle = '#667eea';
+            ctx.fillRect(x, chartHeight - detectionsHeight + 20, barWidth, detectionsHeight);
+            
+            // Doomscrolls bar
+            const doomscrollsHeight = day.doomscrolls * scale;
+            ctx.fillStyle = '#f6ad55';
+            ctx.fillRect(x + barWidth + 2, chartHeight - doomscrollsHeight + 20, barWidth, doomscrollsHeight);
+            
+            // Date label
+            ctx.fillStyle = '#718096';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            const date = new Date(day.date);
+            const label = `${date.getMonth() + 1}/${date.getDate()}`;
+            ctx.fillText(label, x + barWidth + 1, canvas.height - 10);
+        });
+        
+        // Legend
+        ctx.fillStyle = '#667eea';
+        ctx.fillRect(20, 20, 15, 15);
+        ctx.fillStyle = '#2d3748';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Dark Patterns', 40, 31);
+        
+        ctx.fillStyle = '#f6ad55';
+        ctx.fillRect(150, 20, 15, 15);
+        ctx.fillText('Doomscrolls', 170, 31);
+    }
+    
+    // Time range selector
+    document.getElementById('time-range').addEventListener('change', (e) => {
+        currentRange = parseInt(e.target.value);
+        loadAnalytics();
+    });
+    
+    // Load analytics on page load
+    loadAnalytics();
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>{% block title %}ShieldUI Dashboard{% endblock %}</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f1419;
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+        }
+        
+        .navbar-brand {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f7fafc;
+            text-decoration: none;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .navbar-link {
+            text-decoration: none;
+            color: #a0aec0;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .navbar-link:hover {
+            background: #2d3748;
+            color: #f7fafc;
+        }
+        
+        .navbar-link.active {
+            background: #2d3748;
+            color: #f7fafc;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #4a5568;
+            color: #f7fafc;
+        }
+        
+        .btn-primary:hover {
+            background: #2d3748;
+        }
+        
+        .btn-secondary {
+            background: #2d3748;
+            color: #a0aec0;
+        }
+        
+        .btn-secondary:hover {
+            background: #4a5568;
+            color: #f7fafc;
+        }
+        
+        .card {
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #f7fafc;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-error {
+            background: #fed7d7;
+            color: #9b2c2c;
+            border: 1px solid #fc8181;
+        }
+        
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #48bb78;
+        }
+        
+        .alert-info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #4299e1;
+        }
+        
+        {% block styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% if user %}
+    <div class="container">
+        <nav class="navbar">
+            <div class="navbar-content">
+                <a href="{{ url_for('frontend.index') }}" class="navbar-brand">ShieldUI</a>
+                <div class="navbar-menu">
+                    <a href="{{ url_for('frontend.index') }}" class="navbar-link">Dashboard</a>
+                    <a href="{{ url_for('frontend.analytics') }}" class="navbar-link">Analytics</a>
+                    <a href="{{ url_for('frontend.settings') }}" class="navbar-link">Settings</a>
+                    <span style="color: #4a5568; margin: 0 10px;">|</span>
+                    <span style="color: #a0aec0; font-size: 14px;">{{ user.username }}</span>
+                    <a href="{{ url_for('frontend.logout') }}" class="btn btn-secondary">Logout</a>
+                </div>
+            </div>
+        </nav>
+        
+        {% block content %}{% endblock %}
+    </div>
+    {% else %}
+    {% block public_content %}{% endblock %}
+    {% endif %}
+    
+    <script>
+        // Service worker registration disabled for cleaner experience
+        // Uncomment if PWA features are needed
+        /*
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => console.log('Service worker registered'))
+                .catch(err => console.log('Service worker registration failed:', err));
+        }
+        */
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

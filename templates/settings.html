@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - ShieldUI{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 32px; margin-bottom: 30px;">Settings</h1>
+
+<div id="success-message" style="display: none;" class="alert alert-success"></div>
+<div id="error-message" style="display: none;" class="alert alert-error"></div>
+
+<div class="card">
+    <h2 class="card-title">Dark Pattern Detection</h2>
+    
+    <div class="form-group">
+        <label class="form-label" for="dark-pattern-sensitivity">Detection Sensitivity</label>
+        <input type="range" id="dark-pattern-sensitivity" min="0" max="1" step="0.1" value="0.7" style="width: 100%;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #718096; margin-top: 5px;">
+            <span>Low (0.0)</span>
+            <span id="sensitivity-value">0.7</span>
+            <span>High (1.0)</span>
+        </div>
+        <small style="color: #718096; display: block; margin-top: 10px;">
+            Higher sensitivity may result in more false positives
+        </small>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Doomscroll Prevention</h2>
+    
+    <div class="form-group">
+        <label class="form-label" for="doomscroll-threshold">Time Threshold (seconds)</label>
+        <input type="number" id="doomscroll-threshold" class="form-input" min="60" max="3600" step="30" value="300">
+        <small style="color: #718096; display: block; margin-top: 5px;">
+            Trigger interventions after this many seconds of scrolling (default: 300 = 5 minutes)
+        </small>
+    </div>
+    
+    <div class="form-group">
+        <label class="form-label" for="intervention-style">Intervention Style</label>
+        <select id="intervention-style" class="form-input">
+            <option value="gentle">Gentle - Subtle notifications</option>
+            <option value="moderate" selected>Moderate - Noticeable warnings</option>
+            <option value="aggressive">Aggressive - Strong interventions</option>
+        </select>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Enabled Websites</h2>
+    
+    <div class="form-group">
+        <label class="form-label">Monitor these websites</label>
+        <div id="websites-list" style="margin-bottom: 15px;">
+            <!-- Websites will be listed here -->
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="new-website" class="form-input" placeholder="example.com" style="flex: 1;">
+            <button type="button" class="btn btn-primary" onclick="addWebsite()">Add</button>
+        </div>
+        <small style="color: #718096; display: block; margin-top: 5px;">
+            Leave empty to monitor all websites
+        </small>
+    </div>
+</div>
+
+<div style="display: flex; gap: 15px; margin-top: 30px;">
+    <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    <button type="button" class="btn btn-secondary" onclick="loadSettings()">Reset</button>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2d3748;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .website-tag {
+        display: inline-block;
+        background: #edf2f7;
+        color: #4a5568;
+        padding: 6px 12px;
+        border-radius: 6px;
+        margin: 5px 5px 5px 0;
+        font-size: 14px;
+    }
+    
+    .website-tag button {
+        background: none;
+        border: none;
+        color: #f56565;
+        margin-left: 8px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSettings = null;
+    const AUTH_TOKEN = "{{ token }}";
+    
+    async function loadSettings() {
+        try {
+            if (!AUTH_TOKEN) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            const response = await fetch('/api/settings', {
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                currentSettings = data.settings;
+                
+                document.getElementById('dark-pattern-sensitivity').value = currentSettings.dark_pattern_sensitivity;
+                document.getElementById('sensitivity-value').textContent = currentSettings.dark_pattern_sensitivity.toFixed(1);
+                document.getElementById('doomscroll-threshold').value = currentSettings.doomscroll_time_threshold;
+                document.getElementById('intervention-style').value = currentSettings.intervention_style;
+                
+                renderWebsites(currentSettings.enabled_websites);
+            } else {
+                showError('Failed to load settings');
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            showError('Network error loading settings');
+        }
+    }
+    
+    function renderWebsites(websites) {
+        const container = document.getElementById('websites-list');
+        
+        if (websites.length === 0) {
+            container.innerHTML = '<div style="color: #a0aec0; font-size: 14px;">Monitoring all websites</div>';
+            return;
+        }
+        
+        container.innerHTML = websites.map(site => `
+            <span class="website-tag">
+                ${site}
+                <button onclick="removeWebsite('${site}')">&times;</button>
+            </span>
+        `).join('');
+    }
+    
+    function addWebsite() {
+        const input = document.getElementById('new-website');
+        const website = input.value.trim().toLowerCase();
+        
+        if (!website) return;
+        
+        if (!currentSettings.enabled_websites.includes(website)) {
+            currentSettings.enabled_websites.push(website);
+            renderWebsites(currentSettings.enabled_websites);
+            input.value = '';
+        } else {
+            showError('Website already added');
+        }
+    }
+    
+    function removeWebsite(website) {
+        currentSettings.enabled_websites = currentSettings.enabled_websites.filter(w => w !== website);
+        renderWebsites(currentSettings.enabled_websites);
+    }
+    
+    async function saveSettings() {
+        try {
+            const updatedSettings = {
+                dark_pattern_sensitivity: parseFloat(document.getElementById('dark-pattern-sensitivity').value),
+                doomscroll_time_threshold: parseInt(document.getElementById('doomscroll-threshold').value),
+                intervention_style: document.getElementById('intervention-style').value,
+                enabled_websites: currentSettings.enabled_websites
+            };
+            
+            const response = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedSettings)
+            });
+            
+            if (response.ok) {
+                showSuccess('Settings saved successfully!');
+                await loadSettings();  // Reload to get updated version
+            } else {
+                const data = await response.json();
+                showError(data.error || 'Failed to save settings');
+            }
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            showError('Network error saving settings');
+        }
+    }
+    
+    // Update sensitivity display
+    document.getElementById('dark-pattern-sensitivity').addEventListener('input', (e) => {
+        document.getElementById('sensitivity-value').textContent = parseFloat(e.target.value).toFixed(1);
+    });
+    
+    // Allow Enter key to add website
+    document.getElementById('new-website').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addWebsite();
+        }
+    });
+    
+    function showSuccess(message) {
+        const div = document.getElementById('success-message');
+        div.textContent = message;
+        div.style.display = 'block';
+        document.getElementById('error-message').style.display = 'none';
+        setTimeout(() => { div.style.display = 'none'; }, 3000);
+    }
+    
+    function showError(message) {
+        const div = document.getElementById('error-message');
+        div.textContent = message;
+        div.style.display = 'block';
+        document.getElementById('success-message').style.display = 'none';
+        setTimeout(() => { div.style.display = 'none'; }, 5000);
+    }
+    
+    // Load settings on page load
+    loadSettings();
+</script>
+{% endblock %}

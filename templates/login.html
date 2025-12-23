@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Login - ShieldUI{% endblock %}
+
+{% block public_content %}
+<style>
+    .auth-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .auth-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        width: 100%;
+        max-width: 450px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .auth-title {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+        color: #2d3748;
+    }
+    
+    .auth-subtitle {
+        text-align: center;
+        color: #718096;
+        margin-bottom: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #4a5568;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .btn-full {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .divider {
+        text-align: center;
+        margin: 25px 0;
+        color: #a0aec0;
+        position: relative;
+    }
+    
+    .divider::before,
+    .divider::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 45%;
+        height: 1px;
+        background: #e2e8f0;
+    }
+    
+    .divider::before {
+        left: 0;
+    }
+    
+    .divider::after {
+        right: 0;
+    }
+    
+    .auth-link {
+        text-align: center;
+        margin-top: 20px;
+        color: #718096;
+    }
+    
+    .auth-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .auth-link a:hover {
+        text-decoration: underline;
+    }
+    
+    .loading {
+        display: none;
+        text-align: center;
+        color: #667eea;
+        margin-top: 15px;
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-title">🛡️ Welcome Back</div>
+        <div class="auth-subtitle">Sign in to access your ShieldUI dashboard</div>
+        
+        <div id="error-message" style="display: none;" class="alert alert-error"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full" id="passkey-btn">
+                🔑 Sign in with Passkey
+            </button>
+        </form>
+        
+        <div class="divider">OR</div>
+        
+        <div class="form-group">
+            <label class="form-label" for="totp-code">Two-Factor Code</label>
+            <input type="text" id="totp-code" class="form-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}">
+        </div>
+        
+        <button type="button" class="btn btn-primary btn-full" id="login-btn">
+            Sign In
+        </button>
+        
+        <div class="loading" id="loading">
+            Authenticating...
+        </div>
+        
+        <div class="auth-link">
+            Don't have an account? <a href="{{ url_for('frontend.register') }}">Register here</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    let passkeyCredential = null;
+    let username = null;
+    
+    // Handle passkey authentication
+    document.getElementById('passkey-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        username = document.getElementById('username').value.trim();
+        
+        if (!username) {
+            showError('Please enter your username');
+            return;
+        }
+        
+        try {
+            // Simulate WebAuthn challenge (in production, get this from server)
+            const credential = await navigator.credentials.get({
+                publicKey: {
+                    challenge: new Uint8Array(32),
+                    rpId: window.location.hostname,
+                    userVerification: 'preferred',
+                    timeout: 60000
+                }
+            });
+            
+            if (credential) {
+                passkeyCredential = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                document.getElementById('totp-code').focus();
+                showSuccess('Passkey verified! Enter your 2FA code.');
+            }
+        } catch (error) {
+            console.error('Passkey error:', error);
+            showError('Passkey authentication failed. Please try again.');
+        }
+    });
+    
+    // Handle final login
+    document.getElementById('login-btn').addEventListener('click', async () => {
+        const totpCode = document.getElementById('totp-code').value.trim();
+        
+        if (!username) {
+            showError('Please enter your username first');
+            return;
+        }
+        
+        if (!passkeyCredential) {
+            showError('Please authenticate with your passkey first');
+            return;
+        }
+        
+        if (!totpCode || totpCode.length !== 6) {
+            showError('Please enter a valid 6-digit 2FA code');
+            return;
+        }
+        
+        try {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('login-btn').disabled = true;
+            
+            // Call login API
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    passkey_credential: passkeyCredential,
+                    totp_code: totpCode
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Set session cookie
+                await fetch('/api/frontend/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token: data.token })
+                });
+                
+                // Redirect to dashboard
+                window.location.href = '/';
+            } else {
+                showError(data.error || 'Login failed');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('login-btn').disabled = false;
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showError('Network error. Please try again.');
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('login-btn').disabled = false;
+        }
+    });
+    
+    // Auto-submit on 6 digits
+    document.getElementById('totp-code').addEventListener('input', (e) => {
+        if (e.target.value.length === 6) {
+            document.getElementById('login-btn').click();
+        }
+    });
+    
+    function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        errorDiv.className = 'alert alert-error';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+    
+    function showSuccess(message) {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        errorDiv.className = 'alert alert-success';
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Register - ShieldUI{% endblock %}
+
+{% block public_content %}
+<style>
+    .auth-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .auth-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .auth-title {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+        color: #2d3748;
+    }
+    
+    .auth-subtitle {
+        text-align: center;
+        color: #718096;
+        margin-bottom: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #4a5568;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .btn-full {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .step {
+        display: none;
+    }
+    
+    .step.active {
+        display: block;
+    }
+    
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+    }
+    
+    .step-item {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        color: #a0aec0;
+        position: relative;
+    }
+    
+    .step-item::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 2px;
+        background: #e2e8f0;
+        z-index: -1;
+    }
+    
+    .step-item:last-child::after {
+        display: none;
+    }
+    
+    .step-item.completed {
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .qr-code {
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    .qr-code img {
+        max-width: 200px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    
+    .auth-link {
+        text-align: center;
+        margin-top: 20px;
+        color: #718096;
+    }
+    
+    .auth-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .auth-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-title">🛡️ Create Account</div>
+        <div class="auth-subtitle">Set up your secure ShieldUI account</div>
+        
+        <div class="step-indicator">
+            <div class="step-item completed" id="step-indicator-1">1. Username</div>
+            <div class="step-item" id="step-indicator-2">2. Passkey</div>
+            <div class="step-item" id="step-indicator-3">3. 2FA</div>
+        </div>
+        
+        <div id="error-message" style="display: none;" class="alert alert-error"></div>
+        <div id="success-message" style="display: none;" class="alert alert-success"></div>
+        
+        <!-- Step 1: Username -->
+        <div class="step active" id="step-1">
+            <div class="form-group">
+                <label class="form-label" for="username">Choose a Username</label>
+                <input type="text" id="username" class="form-input" placeholder="Enter username" required>
+                <small style="color: #718096; display: block; margin-top: 5px;">
+                    3-20 characters, alphanumeric only
+                </small>
+            </div>
+            <button type="button" class="btn btn-primary btn-full" onclick="goToStep2()">
+                Continue
+            </button>
+        </div>
+        
+        <!-- Step 2: Passkey Setup -->
+        <div class="step" id="step-2">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p style="color: #4a5568; margin-bottom: 15px;">
+                    Create a secure passkey using your device's biometric authentication (fingerprint, face, or PIN).
+                </p>
+            </div>
+            <button type="button" class="btn btn-primary btn-full" onclick="createPasskey()">
+                🔑 Create Passkey
+            </button>
+            <button type="button" class="btn btn-secondary btn-full" style="margin-top: 10px;" onclick="goToStep1()">
+                Back
+            </button>
+        </div>
+        
+        <!-- Step 3: TOTP Setup -->
+        <div class="step" id="step-3">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p style="color: #4a5568; margin-bottom: 15px;">
+                    Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                </p>
+            </div>
+            <div class="qr-code" id="qr-code-container">
+                <!-- QR code will be inserted here -->
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="verify-code">Verify Code</label>
+                <input type="text" id="verify-code" class="form-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}">
+            </div>
+            <button type="button" class="btn btn-primary btn-full" onclick="completeRegistration()">
+                Complete Registration
+            </button>
+        </div>
+        
+        <div class="auth-link">
+            Already have an account? <a href="{{ url_for('frontend.login') }}">Login here</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+    let username = '';
+    let passkeyCredential = '';
+    let userId = null;
+    
+    function goToStep1() {
+        showStep(1);
+    }
+    
+    async function goToStep2() {
+        username = document.getElementById('username').value.trim();
+        
+        if (!username || username.length < 3 || username.length > 20) {
+            showError('Username must be 3-20 characters');
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9]+$/.test(username)) {
+            showError('Username must be alphanumeric only');
+            return;
+        }
+        
+        showStep(2);
+    }
+    
+    async function createPasskey() {
+        try {
+            // Create WebAuthn credential
+            const credential = await navigator.credentials.create({
+                publicKey: {
+                    challenge: new Uint8Array(32),
+                    rp: {
+                        name: "ShieldUI",
+                        id: window.location.hostname
+                    },
+                    user: {
+                        id: new Uint8Array(16),
+                        name: username,
+                        displayName: username
+                    },
+                    pubKeyCredParams: [
+                        { type: "public-key", alg: -7 },
+                        { type: "public-key", alg: -257 }
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        userVerification: "required"
+                    },
+                    timeout: 60000
+                }
+            });
+            
+            if (credential) {
+                passkeyCredential = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                
+                // Register passkey with backend
+                const response = await fetch('/api/auth/register/passkey', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        passkey_credential: passkeyCredential
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    userId = data.user_id;
+                    await setupTOTP();
+                    showStep(3);
+                } else {
+                    showError(data.error || 'Registration failed');
+                }
+            }
+        } catch (error) {
+            console.error('Passkey error:', error);
+            showError('Passkey creation failed. Please try again.');
+        }
+    }
+    
+    async function setupTOTP() {
+        try {
+            const response = await fetch('/api/auth/register/totp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: userId })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Display QR code
+                const qrContainer = document.getElementById('qr-code-container');
+                qrContainer.innerHTML = `<img src="${data.qr_code}" alt="QR Code">`;
+            } else {
+                showError(data.error || 'TOTP setup failed');
+            }
+        } catch (error) {
+            console.error('TOTP error:', error);
+            showError('2FA setup failed. Please try again.');
+        }
+    }
+    
+    async function completeRegistration() {
+        const verifyCode = document.getElementById('verify-code').value.trim();
+        
+        if (!verifyCode || verifyCode.length !== 6) {
+            showError('Please enter a valid 6-digit code');
+            return;
+        }
+        
+        // Test login to verify everything works
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    passkey_credential: passkeyCredential,
+                    totp_code: verifyCode
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Set session
+                await fetch('/api/frontend/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token: data.token })
+                });
+                
+                showSuccess('Registration complete! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } else {
+                showError(data.error || 'Verification failed. Please check your code.');
+            }
+        } catch (error) {
+            console.error('Verification error:', error);
+            showError('Verification failed. Please try again.');
+        }
+    }
+    
+    function showStep(step) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step-${step}`).classList.add('active');
+        
+        document.querySelectorAll('.step-item').forEach((el, index) => {
+            if (index < step) {
+                el.classList.add('completed');
+            } else {
+                el.classList.remove('completed');
+            }
+        });
+        
+        currentStep = step;
+    }
+    
+    function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        document.getElementById('success-message').style.display = 'none';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+    
+    function showSuccess(message) {
+        const successDiv = document.getElementById('success-message');
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+        document.getElementById('error-message').style.display = 'none';
+    }
+</script>
+{% endblock %}
