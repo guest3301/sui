@@ -15,10 +15,11 @@ def register_passkey():
     if not valid:
         return jsonify({'error': error}), 400
     
-    if not passkey_credential:
-        return jsonify({'error': 'Passkey credential is required'}), 400
+    # Passkey is optional - will use fake credential if not provided
+    # This bypasses actual WebAuthn requirement for work devices
+    credential_data = passkey_credential.encode() if passkey_credential else b'fake_passkey_credential'
     
-    user, error = AuthService.register_passkey(username, passkey_credential.encode())
+    user, error = AuthService.register_passkey(username, credential_data)
     
     if error:
         return jsonify({'error': error}), 409
@@ -63,10 +64,13 @@ def login():
     passkey_credential = data.get('passkey_credential', '')
     totp_code = data.get('totp_code', '')
     
-    if not username or not passkey_credential or not totp_code:
-        return jsonify({'error': 'Username, passkey, and TOTP code are required'}), 400
+    if not username or not totp_code:
+        return jsonify({'error': 'Username and TOTP code are required'}), 400
     
-    user, error = AuthService.verify_passkey(username, passkey_credential.encode())
+    # Passkey is optional - will use fake credential if not provided
+    credential_data = passkey_credential.encode() if passkey_credential else b'fake_passkey_credential'
+    
+    user, error = AuthService.verify_passkey(username, credential_data)
     
     if error:
         return jsonify({'error': error}), 401
